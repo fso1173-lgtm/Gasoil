@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Gasoil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f0e;
+      --panel: #141715;
+      --border: #2a2e2b;
+      --accent: #b8f55a;
+      --accent2: #ffb830;
+      --accent3: #c084fc;
+      --info: #5ab8f5;
+      --text: #e8ede9;
+      --muted: #6b7a6e;
+      --danger: #ff5a5a;
+      --row-even: #171a18;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.4rem, 8vw, 4rem);
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .subtitle { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+
+    .tab {
+      background: none; border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted); cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      padding: 8px 14px 10px; text-transform: uppercase;
+      transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -1px;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* FORM */
+    .form-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 22px; margin-bottom: 28px;
+      display: grid; gap: 16px;
+    }
+
+    .form-title {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.2em;
+      color: var(--muted); padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+
+    .km-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; }
+    .arrow-sep { font-size: 1.2rem; color: var(--muted); padding-bottom: 12px; text-align: center; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+
+    label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+
+    input[type="number"] {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+      color: var(--text); font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.05rem; padding: 10px 12px; width: 100%;
+      transition: border-color 0.2s; -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { outline: none; border-color: var(--accent); }
+
+    input.readonly-green {
+      border-color: #1e2e20; color: var(--accent);
+      background: #111812; cursor: default;
+    }
+
+    input.readonly-blue {
+      border-color: #12243a; color: var(--info);
+      background: #0d1620; cursor: default;
+    }
+
+    .unit { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+    /* PREVIEW */
+    .preview-bar {
+      background: #111812; border: 1px solid #1e3010; border-radius: 3px;
+      padding: 12px 14px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+    }
+
+    .preview-bar.hidden { display: none; }
+    .preview-item { display: flex; flex-direction: column; gap: 2px; }
+
+    .preview-lbl { font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+
+    .preview-val { font-family: 'Bebas Neue', sans-serif; font-size: 1.25rem; color: var(--accent); }
+    .preview-val.orange { color: var(--accent2); }
+    .preview-val.blue   { color: var(--info); }
+
+    .btn-add {
+      background: var(--accent); color: var(--bg); border: none; border-radius: 3px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.08em;
+      padding: 12px 28px; cursor: pointer; width: 100%;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-add:hover { background: #c8ff6a; }
+    .btn-add:active { transform: scale(0.98); }
+    .btn-add:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px; }
+
+    .stat-box {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+      padding: 14px 12px; position: relative; overflow: hidden;
+    }
+
+    .stat-box::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent);
+    }
+
+    .stat-box.s2::before { background: var(--accent2); }
+    .stat-box.s3::before { background: var(--info); }
+    .stat-box.s4::before { background: var(--muted); }
+
+    .stat-label { font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.1rem, 3vw, 1.7rem);
+      color: var(--accent); line-height: 1;
+    }
+
+    .stat-box.s2 .stat-value { color: var(--accent2); }
+    .stat-box.s3 .stat-value { color: var(--info); }
+    .stat-box.s4 .stat-value { color: var(--text); }
+    .stat-unit { font-size: 0.56rem; color: var(--muted); margin-top: 3px; }
+
+    /* SECTION */
+    .section-title {
+      font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.2em;
+      color: var(--muted); margin-bottom: 10px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 32px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.74rem; }
+
+    thead th {
+      background: #1a1e1b; padding: 10px 12px; text-align: left;
+      font-size: 0.57rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); white-space: nowrap; border-bottom: 1px solid var(--border);
+    }
+
+    thead th.num { text-align: right; }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:nth-child(even) { background: var(--row-even); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1e2320; }
+
+    td { padding: 9px 12px; vertical-align: middle; white-space: nowrap; }
+    td.num { text-align: right; }
+
+    .td-date   { color: var(--muted); font-size: 0.67rem; }
+    .td-odo    { color: var(--info);  font-size: 0.72rem; }
+    .td-km     { color: var(--text); }
+    .td-litros { color: var(--info); }
+    .td-euros  { color: var(--accent2); }
+    .td-plitro { color: var(--accent3); }
+    .td-cons   { color: var(--info); }
+    .td-cost   { color: var(--accent); font-weight: 500; }
+    .td-period { color: var(--text); font-weight: 500; }
+    .td-repost { color: var(--muted); font-size: 0.7rem; text-align: right; }
+
+    .year-header td {
+      background: #1a1e1b; color: var(--accent3);
+      font-family: 'Bebas Neue', sans-serif; font-size: 1rem;
+      letter-spacing: 0.08em; padding: 8px 12px; border-top: 1px solid var(--border);
+    }
+
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 0.62rem; }
+    .badge-good { background: #1e3010; color: var(--accent); }
+    .badge-mid  { background: #332800; color: var(--accent2); }
+    .badge-bad  { background: #330f0f; color: var(--danger); }
+
+    .btn-del {
+      background: none; border: 1px solid var(--border); border-radius: 2px;
+      color: var(--muted); cursor: pointer; font-size: 0.7rem; padding: 3px 8px;
+      font-family: 'IBM Plex Mono', monospace; transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-del:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* BAR */
+    .bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; min-width: 40px; max-width: 80px; }
+    .bar-fill  { height: 100%; border-radius: 2px; background: var(--accent2); }
+
+    /* YEAR CARDS */
+    .year-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-bottom: 32px; }
+
+    .year-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 16px 14px; position: relative; overflow: hidden;
+    }
+
+    .year-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent3);
+    }
+
+    .year-card-year { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--accent3); line-height: 1; margin-bottom: 10px; }
+
+    .year-card-row {
+      display: flex; justify-content: space-between; font-size: 0.69rem;
+      padding: 3px 0; border-bottom: 1px solid var(--border);
+    }
+
+    .year-card-row:last-child { border-bottom: none; }
+    .year-card-lbl { color: var(--muted); }
+    .year-card-val { color: var(--text); }
+    .year-card-val.green  { color: var(--accent); }
+    .year-card-val.orange { color: var(--accent2); }
+    .year-card-val.blue   { color: var(--info); }
+
+    .empty-state { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 0.78rem; }
+    .empty-icon  { font-size: 2rem; margin-bottom: 10px; opacity: 0.4; }
+
+    /* FLASH */
+    .flash {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--accent); color: var(--bg);
+      font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; font-weight: 500;
+      padding: 10px 20px; border-radius: 3px;
+      transition: transform 0.3s cubic-bezier(.23,1.1,.65,1);
+      white-space: nowrap; z-index: 999; max-width: 92vw; text-align: center;
+    }
+
+    .flash.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .km-row   { grid-template-columns: 1fr 1fr; }
+      .arrow-sep { display: none; }
+      .form-row  { grid-template-columns: 1fr 1fr; }
+      .form-row-3 { grid-template-columns: 1fr 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⛽ Gasoil</h1>
+    <div class="subtitle">Control de consumo y gasto por kilómetro</div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('registrar')">Registrar</button>
+  <button class="tab" onclick="switchTab('mensual')">Por mes</button>
+  <button class="tab" onclick="switchTab('anual')">Por año</button>
+  <button class="tab" onclick="switchTab('historial')">Historial</button>
+</div>
+
+<!-- ══ TAB REGISTRAR ══ -->
+<div class="tab-panel active" id="panel-registrar">
+
+  <div class="form-card">
+    <div class="form-title">Nuevo repostaje — odómetro + precio</div>
+
+    <!-- Odómetro -->
+    <div class="km-row">
+      <div class="field">
+        <label>Km iniciales</label>
+        <input type="number" id="km-ini" placeholder="ej. 45000" min="0" step="1" oninput="recalc()">
+        <div class="unit">odómetro al repostar</div>
+      </div>
+      <div class="arrow-sep">→</div>
+      <div class="field">
+        <label>Km finales</label>
+        <input type="number" id="km-fin" placeholder="ej. 45350" min="0" step="1" oninput="recalc()">
+        <div class="unit">odómetro siguiente repostaje</div>
+      </div>
+    </div>
+
+    <!-- Importe + Precio litro -->
+    <div class="form-row">
+      <div class="field">
+        <label>Importe repostado</label>
+        <input type="number" id="euros" placeholder="0.00" min="0" step="0.01" oninput="recalc()">
+        <div class="unit">euros (€)</div>
+      </div>
+      <div class="field">
+        <label>Precio por litro</label>
+        <input type="number" id="precio-litro" placeholder="ej. 1.459" min="0" step="0.001" oninput="recalc()">
+        <div class="unit">€ / litro en surtidor</div>
+      </div>
+    </div>
+
+    <!-- Calculados automáticamente -->
+    <div class="form-row-3">
+      <div class="field">
+        <label>Km recorridos</label>
+        <input type="number" id="km-calc" class="readonly-green" placeholder="—" readonly tabindex="-1">
+        <div class="unit">diferencia odómetro</div>
+      </div>
+      <div class="field">
+        <label>Litros repostados</label>
+        <input type="number" id="litros-calc" class="readonly-blue" placeholder="—" readonly tabindex="-1">
+        <div class="unit">€ ÷ precio/litro</div>
+      </div>
+      <div class="field">
+        <label>Consumo</label>
+        <input type="number" id="cons-calc" class="readonly-blue" placeholder="—" readonly tabindex="-1">
+        <div class="unit">litros / 100 km</div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-bar hidden" id="preview-bar">
+      <div class="preview-item">
+        <div class="preview-lbl">Km recorridos</div>
+        <div class="preview-val" id="prev-km">—</div>
+      </div>
+      <div class="preview-item">
+        <div class="preview-lbl">Repostado</div>
+        <div class="preview-val orange" id="prev-eur">—</div>
+      </div>
+      <div class="preview-item">
+        <div class="preview-lbl">Litros</div>
+        <div class="preview-val blue" id="prev-lit">—</div>
+      </div>
+      <div class="preview-item">
+        <div class="preview-lbl">Consumo</div>
+        <div class="preview-val blue" id="prev-cons">—</div>
+      </div>
+      <div class="preview-item">
+        <div class="preview-lbl">€ / km</div>
+        <div class="preview-val" id="prev-cpk">—</div>
+      </div>
+    </div>
+
+    <button class="btn-add" id="btn-registrar" onclick="addEntry()" disabled>+ Registrar repostaje</button>
+  </div>
+
+  <!-- Stats globales -->
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-label">€ / km medio</div>
+      <div class="stat-value" id="stat-avg">—</div>
+      <div class="stat-unit">coste por kilómetro</div>
+    </div>
+    <div class="stat-box s2">
+      <div class="stat-label">Total gastado</div>
+      <div class="stat-value" id="stat-total-eur">—</div>
+      <div class="stat-unit">euros</div>
+    </div>
+    <div class="stat-box s3">
+      <div class="stat-label">Consumo medio</div>
+      <div class="stat-value" id="stat-cons">—</div>
+      <div class="stat-unit">litros / 100 km</div>
+    </div>
+    <div class="stat-box s4">
+      <div class="stat-label">Total km recorridos</div>
+      <div class="stat-value" id="stat-total-km">—</div>
+      <div class="stat-unit">kilómetros</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ TAB MENSUAL ══ -->
+<div class="tab-panel" id="panel-mensual">
+  <div class="section-title">Resumen mensual</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th class="num">Repos.</th>
+          <th class="num">Km</th>
+          <th class="num">Litros</th>
+          <th class="num">Total €</th>
+          <th class="num">L/100km</th>
+          <th class="num">€/km</th>
+          <th>Nivel</th>
+        </tr>
+      </thead>
+      <tbody id="monthly-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ TAB ANUAL ══ -->
+<div class="tab-panel" id="panel-anual">
+  <div class="section-title">Resumen anual</div>
+  <div class="year-cards" id="year-cards"></div>
+</div>
+
+<!-- ══ TAB HISTORIAL ══ -->
+<div class="tab-panel" id="panel-historial">
+  <div class="section-title">Historial completo</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Odómetro</th>
+          <th class="num">Km</th>
+          <th class="num">€ Total</th>
+          <th class="num">€/L</th>
+          <th class="num">Litros</th>
+          <th class="num">L/100km</th>
+          <th class="num">€/km</th>
+          <th>Nivel</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="entries-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<script>
+  const KEY = 'gasoil_v3';
+  let entries = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function save() { localStorage.setItem(KEY, JSON.stringify(entries)); }
+
+  function badge(cons) {
+    // based on L/100km: <6 good, <8 mid, else bad
+    if (cons < 6)  return { cls: 'badge-good', txt: 'Eficiente' };
+    if (cons < 8)  return { cls: 'badge-mid',  txt: 'Normal' };
+    return { cls: 'badge-bad', txt: 'Alto' };
+  }
+
+  function fmtDate(ts) {
+    return new Date(ts).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  }
+
+  function switchTab(id) {
+    const ids = ['registrar','mensual','anual','historial'];
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ids[i] === id));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+  }
+
+  function prefillKmIni() {
+    const inp = document.getElementById('km-ini');
+    if (entries.length && !inp.value) inp.value = entries[entries.length - 1].kmFin;
+    // also prefill last price per litre
+    const pl = document.getElementById('precio-litro');
+    if (entries.length && !pl.value && entries[entries.length-1].precioL) {
+      pl.value = entries[entries.length-1].precioL.toFixed(3);
+    }
+  }
+
+  function recalc() {
+    const ini = parseFloat(document.getElementById('km-ini').value);
+    const fin = parseFloat(document.getElementById('km-fin').value);
+    const eur = parseFloat(document.getElementById('euros').value);
+    const pl  = parseFloat(document.getElementById('precio-litro').value);
+
+    const bar = document.getElementById('preview-bar');
+    const btn = document.getElementById('btn-registrar');
+
+    const kmOk  = isFinite(ini) && isFinite(fin) && fin > ini;
+    const eurOk = isFinite(eur) && eur > 0;
+    const plOk  = isFinite(pl)  && pl  > 0;
+
+    if (kmOk) {
+      const diff = fin - ini;
+      document.getElementById('km-calc').value = diff.toFixed(1);
+
+      if (eurOk && plOk) {
+        const litros = eur / pl;
+        const cons   = (litros / diff) * 100;
+        const cpk    = eur / diff;
+
+        document.getElementById('litros-calc').value = litros.toFixed(2);
+        document.getElementById('cons-calc').value   = cons.toFixed(2);
+
+        document.getElementById('prev-km').textContent   = diff.toFixed(1) + ' km';
+        document.getElementById('prev-eur').textContent  = eur.toFixed(2) + ' €';
+        document.getElementById('prev-lit').textContent  = litros.toFixed(2) + ' L';
+        document.getElementById('prev-cons').textContent = cons.toFixed(2) + ' L/100';
+        document.getElementById('prev-cpk').textContent  = cpk.toFixed(4) + ' €/km';
+        bar.classList.remove('hidden');
+        btn.disabled = false;
+      } else {
+        document.getElementById('litros-calc').value = '';
+        document.getElementById('cons-calc').value   = '';
+        bar.classList.add('hidden');
+        btn.disabled = true;
+      }
+    } else {
+      document.getElementById('km-calc').value    = '';
+      document.getElementById('litros-calc').value = '';
+      document.getElementById('cons-calc').value   = '';
+      bar.classList.add('hidden');
+      btn.disabled = true;
+    }
+  }
+
+  function addEntry() {
+    const ini = parseFloat(document.getElementById('km-ini').value);
+    const fin = parseFloat(document.getElementById('km-fin').value);
+    const eur = parseFloat(document.getElementById('euros').value);
+    const pl  = parseFloat(document.getElementById('precio-litro').value);
+
+    if (!isFinite(ini)||!isFinite(fin)||fin<=ini||!isFinite(eur)||eur<=0||!isFinite(pl)||pl<=0) {
+      showFlash('⚠ Revisa los datos introducidos', true); return;
+    }
+
+    const diff   = fin - ini;
+    const litros = eur / pl;
+    const cons   = (litros / diff) * 100;
+    const cpk    = eur / diff;
+
+    entries.push({ kmIni: ini, kmFin: fin, kmDiff: diff, eur, precioL: pl, litros, cons, cpk, ts: Date.now() });
+    save(); renderAll();
+
+    document.getElementById('km-ini').value       = fin;
+    document.getElementById('km-fin').value       = '';
+    document.getElementById('euros').value        = '';
+    document.getElementById('km-calc').value      = '';
+    document.getElementById('litros-calc').value  = '';
+    document.getElementById('cons-calc').value    = '';
+    document.getElementById('preview-bar').classList.add('hidden');
+    document.getElementById('btn-registrar').disabled = true;
+
+    showFlash(`✓ ${diff.toFixed(0)} km · ${litros.toFixed(1)} L · ${cons.toFixed(2)} L/100km · ${cpk.toFixed(4)} €/km`);
+    document.getElementById('km-fin').focus();
+  }
+
+  function deleteEntry(idx) {
+    entries.splice(idx, 1); save(); renderAll();
+    document.getElementById('km-ini').value = entries.length ? entries[entries.length-1].kmFin : '';
+    recalc();
+  }
+
+  // ── Agrupaciones ──
+  function groupBy(fn) {
+    const map = {};
+    entries.forEach(e => {
+      const key = fn(e);
+      if (!map[key]) map[key] = { km: 0, eur: 0, litros: 0, count: 0 };
+      map[key].km     += e.kmDiff;
+      map[key].eur    += e.eur;
+      map[key].litros += e.litros;
+      map[key].count  += 1;
+    });
+    return map;
+  }
+
+  function monthKey(e) {
+    const d = new Date(e.ts);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function yearKey(e) { return String(new Date(e.ts).getFullYear()); }
+
+  // ── Stats globales ──
+  function updateStats() {
+    if (!entries.length) {
+      ['stat-avg','stat-total-eur','stat-cons','stat-total-km'].forEach(id =>
+        document.getElementById(id).textContent = '—');
+      return;
+    }
+    const totalKm  = entries.reduce((s,e) => s + e.kmDiff, 0);
+    const totalEur = entries.reduce((s,e) => s + e.eur,    0);
+    const totalLit = entries.reduce((s,e) => s + e.litros, 0);
+    document.getElementById('stat-avg').textContent       = (totalEur / totalKm).toFixed(4);
+    document.getElementById('stat-total-eur').textContent = totalEur.toFixed(2);
+    document.getElementById('stat-cons').textContent      = ((totalLit / totalKm) * 100).toFixed(2);
+    document.getElementById('stat-total-km').textContent  = totalKm.toFixed(0);
+  }
+
+  // ── Historial ──
+  function renderTable() {
+    const tbody = document.getElementById('entries-body');
+    if (!entries.length) {
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
+        <div class="empty-icon">🛣️</div>Aún no hay registros.</div></td></tr>`; return;
+    }
+    tbody.innerHTML = [...entries].reverse().map((e, ri) => {
+      const idx = entries.length - 1 - ri;
+      const b = badge(e.cons);
+      return `<tr>
+        <td class="td-date">${fmtDate(e.ts)}</td>
+        <td class="td-odo">${e.kmIni.toLocaleString('es-ES')} → ${e.kmFin.toLocaleString('es-ES')}</td>
+        <td class="td-km num">${e.kmDiff.toFixed(1)}</td>
+        <td class="td-euros num">${e.eur.toFixed(2)} €</td>
+        <td class="td-plitro num">${e.precioL.toFixed(3)} €</td>
+        <td class="td-litros num">${e.litros.toFixed(2)} L</td>
+        <td class="td-cons num">${e.cons.toFixed(2)}</td>
+        <td class="td-cost num">${e.cpk.toFixed(4)}</td>
+        <td><span class="badge ${b.cls}">${b.txt}</span></td>
+        <td><button class="btn-del" onclick="deleteEntry(${idx})">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Mensual ──
+  function renderMonthly() {
+    const tbody = document.getElementById('monthly-body');
+    if (!entries.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+        <div class="empty-icon">📅</div>Sin datos todavía.</div></td></tr>`; return;
+    }
+    const map = groupBy(monthKey);
+    const keys = Object.keys(map).sort().reverse();
+    const maxEur = Math.max(...Object.values(map).map(v => v.eur));
+    let lastYear = null;
+    tbody.innerHTML = keys.map(k => {
+      const [yr, mo] = k.split('-');
+      const d    = map[k];
+      const cons = (d.litros / d.km) * 100;
+      const cpk  = d.eur / d.km;
+      const b    = badge(cons);
+      const pct  = maxEur > 0 ? (d.eur / maxEur * 100).toFixed(1) : 0;
+      const yh   = (yr !== lastYear) ? `<tr class="year-header"><td colspan="8">▸ ${yr}</td></tr>` : '';
+      lastYear = yr;
+      return `${yh}<tr>
+        <td class="td-period">${MESES[parseInt(mo,10)-1]} ${yr}</td>
+        <td class="td-repost">${d.count}</td>
+        <td class="num td-km">${d.km.toFixed(0)}</td>
+        <td class="num td-litros">${d.litros.toFixed(1)} L</td>
+        <td class="num td-euros">${d.eur.toFixed(2)} €</td>
+        <td class="num td-cons">${cons.toFixed(2)}</td>
+        <td class="num td-cost">${cpk.toFixed(4)}</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <span class="badge ${b.cls}" style="font-size:0.57rem">${b.txt}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Anual ──
+  function renderYearly() {
+    const cont = document.getElementById('year-cards');
+    if (!entries.length) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📆</div>Sin datos todavía.</div>`; return;
+    }
+    const map  = groupBy(yearKey);
+    const keys = Object.keys(map).sort().reverse();
+
+    cont.innerHTML = keys.map(yr => {
+      const d    = map[yr];
+      const cons = (d.litros / d.km) * 100;
+      const cpk  = d.eur / d.km;
+
+      const monthly = groupBy(monthKey);
+      const moKeys  = Object.keys(monthly).filter(k => k.startsWith(yr)).sort();
+      const moRows  = moKeys.map(k => {
+        const [, mo] = k.split('-');
+        const md   = monthly[k];
+        const mcons = (md.litros / md.km) * 100;
+        return `<div class="year-card-row">
+          <span class="year-card-lbl">${MESES[parseInt(mo,10)-1].slice(0,3)}</span>
+          <span class="year-card-val">${md.km.toFixed(0)} km</span>
+          <span class="year-card-val blue">${mcons.toFixed(1)} L/100</span>
+          <span class="year-card-val orange">${md.eur.toFixed(2)} €</span>
+        </div>`;
+      }).join('');
+
+      return `<div class="year-card">
+        <div class="year-card-year">${yr}</div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">Km totales</span>
+          <span class="year-card-val green">${d.km.toFixed(0)} km</span>
+        </div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">Litros totales</span>
+          <span class="year-card-val blue">${d.litros.toFixed(1)} L</span>
+        </div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">Gasto total</span>
+          <span class="year-card-val orange">${d.eur.toFixed(2)} €</span>
+        </div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">Consumo medio</span>
+          <span class="year-card-val blue">${cons.toFixed(2)} L/100km</span>
+        </div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">€ / km medio</span>
+          <span class="year-card-val">${cpk.toFixed(4)}</span>
+        </div>
+        <div class="year-card-row">
+          <span class="year-card-lbl">Repostajes</span>
+          <span class="year-card-val">${d.count}</span>
+        </div>
+        <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+          <div style="font-size:0.52rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px">Desglose mensual</div>
+          ${moRows}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAll() { updateStats(); renderTable(); renderMonthly(); renderYearly(); }
+
+  function showFlash(msg, isErr = false) {
+    const f = document.getElementById('flash');
+    f.style.background = isErr ? 'var(--danger)' : 'var(--accent)';
+    f.textContent = msg; f.classList.add('show');
+    setTimeout(() => f.classList.remove('show'), 3000);
+  }
+
+  renderAll();
+  prefillKmIni();
+</script>
+</body>
+</html>
